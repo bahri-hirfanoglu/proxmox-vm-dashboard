@@ -7,9 +7,7 @@ import {
   ListBulletIcon,
   ComputerDesktopIcon,
   CpuChipIcon,
-  CircleStackIcon,
-  ServerIcon,
-  SignalIcon
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 

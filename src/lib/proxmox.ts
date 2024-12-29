@@ -36,6 +36,21 @@ interface ProxmoxNode {
   [key: string]: string | number | boolean | undefined;
 }
 
+interface RawVMData {
+  vmid: number;
+  name?: string;
+  status: 'running' | 'stopped' | 'paused';
+  mem?: number;
+  maxmem?: number;
+  cpu?: number;
+  cpus?: number;
+  disk?: number;
+  maxdisk?: number;
+  net0?: string;
+  ip?: string;
+  uptime?: number;
+}
+
 // Proxmox ticket (cookie) based authentication
 async function getAuthTicket() {
   try {
@@ -90,13 +105,13 @@ export async function getNodes(): Promise<ProxmoxNode[]> {
   }
 }
 
-function transformVMData(vmData: any, node: string): VirtualMachine {
-  console.log('Raw VM Data:', vmData); // For debugging
+function transformVMData(vmData: RawVMData, node: string): VirtualMachine {
+  console.log('Raw VM Data:', vmData);
   
   return {
     id: vmData.vmid.toString(),
     name: vmData.name || `VM ${vmData.vmid}`,
-    status: vmData.status as 'running' | 'stopped' | 'paused',
+    status: vmData.status,
     memory: {
       used: vmData.mem || 0,
       total: vmData.maxmem || 0,

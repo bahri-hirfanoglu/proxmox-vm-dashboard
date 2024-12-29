@@ -5,12 +5,10 @@ import {
   CircleStackIcon,
   ClockIcon,
   SignalIcon,
-  ChartBarIcon,
   CogIcon,
   ServerIcon,
   ArrowPathIcon,
   ShieldCheckIcon,
-  WrenchScrewdriverIcon,
   CloudIcon,
   CommandLineIcon
 } from '@heroicons/react/24/outline';
