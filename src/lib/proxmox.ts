@@ -51,6 +51,22 @@ interface RawVMData {
   uptime?: number;
 }
 
+interface RawVMListResponse {
+  vmid: number;
+  name?: string;
+  status: 'running' | 'stopped' | 'paused';
+  mem?: number;
+  maxmem?: number;
+  cpu?: number;
+  cpus?: number;
+  disk?: number;
+  maxdisk?: number;
+  net0?: string;
+  ip?: string;
+  uptime?: number;
+  [key: string]: string | number | boolean | undefined;
+}
+
 // Proxmox ticket (cookie) based authentication
 async function getAuthTicket() {
   try {
@@ -146,9 +162,9 @@ export async function getVirtualMachines(): Promise<VirtualMachine[]> {
     // Get VMs from all nodes
     const vmPromises = nodes.map(async (node: ProxmoxNode) => {
       try {
-        const response = await api.get<ProxmoxResponse<any>>(`/nodes/${node.node}/qemu`);
+        const response = await api.get<ProxmoxResponse<RawVMListResponse[]>>(`/nodes/${node.node}/qemu`);
         const vms = response?.data?.data?.data || [];
-        return vms.map((vm: any) => transformVMData(vm, node.node));
+        return vms.map((vm: RawVMListResponse) => transformVMData(vm as RawVMData, node.node));
       } catch (error) {
         console.error(`Error fetching VMs from node ${node.node}:`, error);
         return [];
@@ -177,9 +193,9 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
     const api = await createAuthenticatedApi();
     
     // First, verify that the VM exists
-    const vmsResponse = await api.get<ProxmoxResponse<any>>(`/nodes/${node}/qemu`);
+    const vmsResponse = await api.get<ProxmoxResponse<RawVMListResponse[]>>(`/nodes/${node}/qemu`);
     const vms = vmsResponse?.data?.data?.data || [];
-    const vm = vms.find((vm: any) => vm.vmid.toString() === vmId);
+    const vm = vms.find((vm: RawVMListResponse) => vm.vmid.toString() === vmId);
     
     if (!vm) {
       console.warn(`VM with ID ${vmId} not found on node ${node}`);
