@@ -69,52 +69,97 @@ interface RawVMListResponse {
 
 // Proxmox ticket (cookie) based authentication
 async function getAuthTicket() {
+  const username = (process.env.PROXMOX_USERNAME || 'root').replace('@pam', '');
+  
   try {
+    console.log('Attempting to get auth ticket from:', process.env.PROXMOX_API_URL);
+    
     const response = await axios.post(
       `${process.env.PROXMOX_API_URL}/access/ticket`,
       new URLSearchParams({
-        username: 'root',
+        username: username,
         password: process.env.PROXMOX_PASSWORD || '',
         realm: 'pam'
       }),
       {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
         httpsAgent: new https.Agent({
           rejectUnauthorized: false
         })
       }
     );
 
+    if (!response.data?.data?.ticket) {
+      console.error('No ticket in response:', response.data);
+      throw new Error('Authentication failed: No ticket received');
+    }
+
+    console.log('Successfully obtained auth ticket');
     return {
       ticket: response.data.data.ticket,
       csrf: response.data.data.CSRFPreventionToken
     };
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('Authentication error details:', {
+      url: process.env.PROXMOX_API_URL,
+      username: username,
+      error: error.response?.data || error.message,
+      fullError: error
+    });
     throw error;
   }
 }
 
 // Create axios instance with authentication
 async function createAuthenticatedApi() {
+  console.log('Creating authenticated API instance');
   const { ticket, csrf } = await getAuthTicket();
   
-  return axios.create({
+  const api = axios.create({
     baseURL: process.env.PROXMOX_API_URL,
     headers: {
       'Cookie': `PVEAuthCookie=${ticket}`,
-      'CSRFPreventionToken': csrf
+      'CSRFPreventionToken': csrf,
+      'Content-Type': 'application/json'
     },
     httpsAgent: new https.Agent({
       rejectUnauthorized: false
     })
   });
+
+  // Add response interceptor for debugging
+  api.interceptors.response.use(
+    response => {
+      console.log(`API Response [${response.config.method?.toUpperCase()}] ${response.config.url}:`, {
+        status: response.status,
+        data: response.data
+      });
+      return response;
+    },
+    error => {
+      console.error(`API Error [${error.config?.method?.toUpperCase()}] ${error.config?.url}:`, {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        fullError: error
+      });
+      return Promise.reject(error);
+    }
+  );
+
+  return api;
 }
 
 export async function getNodes(): Promise<ProxmoxNode[]> {
   try {
+    console.log('Fetching nodes...');
     const api = await createAuthenticatedApi();
     const response = await api.get<ProxmoxResponse<ProxmoxNode[]>>('/nodes');
-    return response?.data?.data?.data || [];
+    const nodes = response?.data?.data?.data || [];
+    console.log('Fetched nodes:', nodes);
+    return nodes;
   } catch (error) {
     console.error('Error fetching nodes:', error);
     return [];
