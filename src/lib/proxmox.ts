@@ -2,12 +2,14 @@ import axios from 'axios';
 import https from 'https';
 import { VirtualMachine } from '@/types/vm';
 
-interface ProxmoxResponse<T> {
-  data: {
-    data: T;
-  };
+interface ProxmoxApiResponse<T> {
+  data: T;
   errors?: string[];
   message?: string;
+}
+
+interface ProxmoxResponse<T> {
+  data: ProxmoxApiResponse<T>;
 }
 
 interface VMConfig {
@@ -21,6 +23,17 @@ interface VMStatus {
   status: string;
   uptime: number;
   qmpstatus?: string;
+}
+
+interface ProxmoxNode {
+  node: string;
+  status: string;
+  cpu: number;
+  maxcpu: number;
+  mem: number;
+  maxmem: number;
+  uptime: number;
+  [key: string]: string | number | boolean | undefined;
 }
 
 // Proxmox ticket (cookie) based authentication
@@ -66,14 +79,14 @@ async function createAuthenticatedApi() {
   });
 }
 
-export async function getNodes() {
+export async function getNodes(): Promise<ProxmoxNode[]> {
   try {
     const api = await createAuthenticatedApi();
-    const response = await api.get('/nodes');
-    return response.data.data;
+    const response = await api.get<ProxmoxResponse<ProxmoxNode[]>>('/nodes');
+    return response?.data?.data?.data || [];
   } catch (error) {
     console.error('Error fetching nodes:', error);
-    throw error;
+    return [];
   }
 }
 
@@ -105,16 +118,22 @@ function transformVMData(vmData: any, node: string): VirtualMachine {
   };
 }
 
-export async function getVirtualMachines() {
+export async function getVirtualMachines(): Promise<VirtualMachine[]> {
   try {
     const api = await createAuthenticatedApi();
     const nodes = await getNodes();
     
+    if (!nodes || nodes.length === 0) {
+      console.warn('No nodes found or unable to fetch nodes');
+      return [];
+    }
+
     // Get VMs from all nodes
-    const vmPromises = nodes.map(async (node) => {
+    const vmPromises = nodes.map(async (node: ProxmoxNode) => {
       try {
-        const response = await api.get(`/nodes/${node.node}/qemu`);
-        return response.data.data.map((vm: any) => transformVMData(vm, node.node));
+        const response = await api.get<ProxmoxResponse<any>>(`/nodes/${node.node}/qemu`);
+        const vms = response?.data?.data?.data || [];
+        return vms.map((vm: any) => transformVMData(vm, node.node));
       } catch (error) {
         console.error(`Error fetching VMs from node ${node.node}:`, error);
         return [];
@@ -125,7 +144,7 @@ export async function getVirtualMachines() {
     return vmsFromAllNodes.flat();
   } catch (error) {
     console.error('Error fetching virtual machines:', error);
-    throw error;
+    return [];
   }
 }
 
@@ -138,16 +157,18 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
     memory: { used: number; total: number };
     disk: { used: number; total: number };
   };
-}> {
+} | null> {
   try {
     const api = await createAuthenticatedApi();
     
     // First, verify that the VM exists
     const vmsResponse = await api.get<ProxmoxResponse<any>>(`/nodes/${node}/qemu`);
-    const vm = vmsResponse.data.data.find((vm: any) => vm.vmid.toString() === vmId);
+    const vms = vmsResponse?.data?.data?.data || [];
+    const vm = vms.find((vm: any) => vm.vmid.toString() === vmId);
     
     if (!vm) {
-      throw new Error(`VM with ID ${vmId} not found on node ${node}`);
+      console.warn(`VM with ID ${vmId} not found on node ${node}`);
+      return null;
     }
 
     // Get basic VM data
@@ -157,30 +178,29 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
       // Get additional details with error handling for each request
       const [statusRes, configRes, rrddataRes] = await Promise.all([
         api.get<ProxmoxResponse<VMStatus>>(`/nodes/${node}/qemu/${vmId}/status/current`)
-          .catch(() => ({ data: { data: { status: 'unknown', uptime: 0 } } })),
+          .catch(() => ({ data: { data: { data: { status: 'unknown', uptime: 0 } } } })),
         api.get<ProxmoxResponse<VMConfig>>(`/nodes/${node}/qemu/${vmId}/config`)
-          .catch(() => ({ data: { data: { name: basicData.name, cores: basicData.cpu.cores, memory: 0 } } })),
+          .catch(() => ({ data: { data: { data: { name: basicData.name, cores: basicData.cpu.cores, memory: 0 } } } })),
         api.get<ProxmoxResponse<Array<Record<string, number>>>>(`/nodes/${node}/qemu/${vmId}/rrddata`)
-          .catch(() => ({ data: { data: [] } }))
+          .catch(() => ({ data: { data: { data: [] } } }))
       ]);
 
       return {
         status: {
-          ...statusRes.data.data,
-          status: basicData.status // Use the status from basic data as it's more reliable
+          ...statusRes?.data?.data?.data || { status: 'unknown', uptime: 0 },
+          status: basicData.status
         },
         config: {
-          ...configRes.data.data,
+          ...configRes?.data?.data?.data || { name: basicData.name, cores: basicData.cpu.cores, memory: 0 },
           name: basicData.name,
           cores: basicData.cpu.cores,
           memory: Math.floor(basicData.memory.total / (1024 * 1024))
         },
-        rrddata: rrddataRes.data.data,
+        rrddata: rrddataRes?.data?.data?.data || [],
         basicData
       };
     } catch (error) {
       console.error(`Error fetching additional VM details for ${vmId}:`, error);
-      // Return basic data with default values if additional details fail
       return {
         status: {
           status: basicData.status,
@@ -197,6 +217,6 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
     }
   } catch (error) {
     console.error(`Error fetching VM details for ${vmId}:`, error);
-    throw error;
+    return null;
   }
 } 
