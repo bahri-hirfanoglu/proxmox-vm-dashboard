@@ -13,19 +13,19 @@ Proxmox VM Dashboard, Proxmox sunucunuzdaki sanal makineleri izlemek ve yönetme
 ## 📸 Ekran Görüntüleri
 
 ### Ana Sayfa - Kart Görünümü (Açık Tema)
-![Ana Sayfa Kart Görünümü](/screenshots/home-grid-light.png)
+![Ana Sayfa Kart Görünümü](/public/screenshots/home-grid-light.png)
 *VM'lerin kart görünümü ve hızlı durum bilgileri*
 
 ### Ana Sayfa - Liste Görünümü (Koyu Tema)
-![Ana Sayfa Liste Görünümü](/screenshots/home-list-dark.png)
+![Ana Sayfa Liste Görünümü](/public/screenshots/home-list-dark.png)
 *VM'lerin detaylı liste görünümü*
 
 ### VM Detay Sayfası
-![VM Detay Sayfası](/screenshots/vm-details.png)
+![VM Detay Sayfası](/public/screenshots/vm-details.png)
 *Sanal makine detaylı bilgileri ve performans metrikleri*
 
 ### Responsive Tasarım
-![Mobil Görünüm](/screenshots/mobile-view.png)
+![Mobil Görünüm](/public/screenshots/mobile-view.png)
 *Mobil cihazlarda uyumlu görünüm*
 
 ### 🌟 Özellikler
@@ -94,19 +94,19 @@ Proxmox VM Dashboard is a modern web interface for monitoring and managing virtu
 ## 📸 Screenshots
 
 ### Home Page - Card View (Light Theme)
-![Home Page Card View](/screenshots/home-grid-light.png)
+![Home Page Card View](/public/screenshots/home-grid-light.png)
 *VM card view with quick status information*
 
 ### Home Page - List View (Dark Theme)
-![Home Page List View](/screenshots/home-list-dark.png)
+![Home Page List View](/public/screenshots/home-list-dark.png)
 *Detailed list view of VMs*
 
 ### VM Detail Page
-![VM Detail Page](/screenshots/vm-details.png)
+![VM Detail Page](/public/screenshots/vm-details.png)
 *Virtual machine detailed information and performance metrics*
 
 ### Responsive Design
-![Mobile View](/screenshots/mobile-view.png)
+![Mobile View](/public/screenshots/mobile-view.png)
 *Responsive layout on mobile devices*
 
 ### 🌟 Features
