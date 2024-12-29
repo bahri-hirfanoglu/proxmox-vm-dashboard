@@ -2,13 +2,6 @@ import axios from 'axios';
 import https from 'https';
 import { VirtualMachine } from '@/types/vm';
 
-interface ProxmoxResponse<T> {
-  data: {
-    data: T;
-  };
-  status: number;
-}
-
 interface VMConfig {
   name: string;
   cores: number;
@@ -171,17 +164,11 @@ async function createAuthenticatedApi() {
   return api;
 }
 
-// Get authentication ticket
-async function getTicket(): Promise<string> {
-  const { ticket } = await getAuthTicket();
-  return ticket;
-}
-
 export async function getNodes(): Promise<ProxmoxNode[]> {
   try {
     console.log('Fetching nodes...');
     const api = await createAuthenticatedApi();
-    const response = await api.get<ProxmoxResponse<ProxmoxNode[]>>('/nodes');
+    const response = await api.get<{ data: ProxmoxNode[] }>('/nodes');
     
     console.log('Full nodes response:', JSON.stringify(response.data, null, 2));
     
@@ -249,7 +236,7 @@ export async function getVirtualMachines(): Promise<VirtualMachine[]> {
     const vmPromises = nodes.map(async (node: ProxmoxNode) => {
       try {
         console.log(`Fetching VMs for node: ${node.node}`);
-        const response = await api.get<ProxmoxResponse<RawVMListResponse[]>>(`/nodes/${node.node}/qemu`);
+        const response = await api.get<{ data: RawVMListResponse[] }>(`/nodes/${node.node}/qemu`);
         
         console.log(`Full VM response for node ${node.node}:`, JSON.stringify(response.data, null, 2));
         
@@ -289,7 +276,7 @@ export async function getVMDetails(vmId: string, node: string): Promise<VMDetail
     const api = await createAuthenticatedApi();
     
     // First, verify that the VM exists
-    const vmsResponse = await api.get<ProxmoxResponse<RawVMListResponse[]>>(`/nodes/${node}/qemu`);
+    const vmsResponse = await api.get<{ data: RawVMListResponse[] }>(`/nodes/${node}/qemu`);
     
     console.log('VM List Response:', JSON.stringify(vmsResponse.data, null, 2));
     
@@ -316,17 +303,17 @@ export async function getVMDetails(vmId: string, node: string): Promise<VMDetail
 
     // Get all VM details in parallel
     const [statusRes, configRes, rrddataRes, snapshots, backups] = await Promise.all([
-      api.get<ProxmoxResponse<VMStatus>>(`/nodes/${node}/qemu/${vmId}/status/current`)
+      api.get<{ data: VMStatus }>(`/nodes/${node}/qemu/${vmId}/status/current`)
         .catch(error => {
           console.error('Error fetching VM status:', error);
           return null;
         }),
-      api.get<ProxmoxResponse<VMConfig>>(`/nodes/${node}/qemu/${vmId}/config`)
+      api.get<{ data: VMConfig }>(`/nodes/${node}/qemu/${vmId}/config`)
         .catch(error => {
           console.error('Error fetching VM config:', error);
           return null;
         }),
-      api.get<ProxmoxResponse<Array<Record<string, number>>>>(`/nodes/${node}/qemu/${vmId}/rrddata`, {
+      api.get<{ data: Array<Record<string, number>> }>(`/nodes/${node}/qemu/${vmId}/rrddata`, {
         params: {
           timeframe: 'hour'
         }
@@ -368,8 +355,8 @@ export async function getVMDetails(vmId: string, node: string): Promise<VMDetail
 export async function getVMSnapshots(vmId: string, node: string): Promise<VMSnapshot[]> {
   try {
     const api = await createAuthenticatedApi();
-    const response = await api.get<ProxmoxResponse<VMSnapshot[]>>(`/nodes/${node}/qemu/${vmId}/snapshot`);
-    return response.data?.data || [];
+    const response = await api.get<{ data: VMSnapshot[] }>(`/nodes/${node}/qemu/${vmId}/snapshot`);
+    return response.data?.data ?? [];
   } catch (error) {
     console.error('Error fetching VM snapshots:', error);
     return [];
@@ -380,13 +367,13 @@ export async function getVMSnapshots(vmId: string, node: string): Promise<VMSnap
 export async function getVMBackups(vmId: string, node: string): Promise<VMBackup[]> {
   try {
     const api = await createAuthenticatedApi();
-    const response = await api.get<ProxmoxResponse<VMBackup[]>>(`/nodes/${node}/storage/local/content`, {
+    const response = await api.get<{ data: VMBackup[] }>(`/nodes/${node}/storage/local/content`, {
       params: {
         content: 'backup',
         vmid: vmId
       }
     });
-    return response.data?.data || [];
+    return response.data?.data ?? [];
   } catch (error) {
     console.error('Error fetching VM backups:', error);
     return [];
