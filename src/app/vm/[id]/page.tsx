@@ -15,12 +15,17 @@ import {
   CommandLineIcon
 } from '@heroicons/react/24/outline';
 import { Navbar } from '@/components/Navbar';
+import { Metadata } from 'next';
 
 export const revalidate = 30;
 
-interface Props {
-  params: { id: string };
-  searchParams: { node?: string };
+interface PageProps {
+  params: Promise<{
+    id: string;
+  }>;
+  searchParams: Promise<{
+    node?: string;
+  }>;
 }
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -66,9 +71,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default async function VMDetailPage(props: Props) {
-  const vmId = props.params.id;
-  const nodeName = props.searchParams.node;
+export default async function VMDetailPage({ params, searchParams }: PageProps) {
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  
+  const vmId = resolvedParams.id;
+  const nodeName = resolvedSearchParams.node;
 
   if (!nodeName) {
     return (
@@ -390,8 +398,8 @@ export default async function VMDetailPage(props: Props) {
                 <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
                   <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">SPICE Encryption</dt>
                   <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">
-                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.spice_enhancements?.includes('foldersharing') ? 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20' : 'bg-red-400/10 text-red-400 ring-red-400/20'}`}>
-                      {config.spice_enhancements?.includes('foldersharing') ? 'Enabled' : 'Disabled'}
+                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${typeof config.spice_enhancements === 'string' && config.spice_enhancements.includes('foldersharing') ? 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20' : 'bg-red-400/10 text-red-400 ring-red-400/20'}`}>
+                      {typeof config.spice_enhancements === 'string' && config.spice_enhancements.includes('foldersharing') ? 'Enabled' : 'Disabled'}
                     </span>
                   </dd>
                 </div>
