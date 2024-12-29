@@ -248,14 +248,8 @@ export default async function VMDetailPage(props: Props) {
                 </div>
                 {config.balloon && (
                   <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
-                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Balloon Device</dt>
-                    <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">{config.balloon === 1 ? 'Enabled' : 'Disabled'}</dd>
-                  </div>
-                )}
-                {config.shares && (
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
-                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">CPU Shares</dt>
-                    <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">{config.shares}</dd>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Balloon</dt>
+                    <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">{config.balloon} MB</dd>
                   </div>
                 )}
               </dl>
@@ -294,24 +288,71 @@ export default async function VMDetailPage(props: Props) {
                 <CircleStackIcon className="w-5 h-5 mr-2 text-gray-400 dark:text-slate-500" />
                 Storage Devices
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {Object.entries(config)
                   .filter(([key]) => key.startsWith('scsi') || key.startsWith('virtio') || key.startsWith('ide') || key.startsWith('sata'))
-                  .map(([key, value]) => (
-                    <div key={key} className="bg-gray-50 dark:bg-slate-700/30 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">
-                          {key.toUpperCase()}
-                        </span>
-                        <span className="text-xs font-medium text-gray-500 dark:text-slate-400">
-                          {String(value).split(',')[0]}
-                        </span>
+                  .map(([key, value]) => {
+                    const [device, ...params] = String(value).split(',');
+                    const paramMap = Object.fromEntries(
+                      params.map(param => {
+                        const [k, v] = param.split('=');
+                        return [k, v];
+                      })
+                    );
+
+                    return (
+                      <div key={key} className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg">
+                              <CircleStackIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                                {key.toUpperCase()}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-slate-400">
+                                {device}
+                              </p>
+                            </div>
+                          </div>
+                          {paramMap.size && (
+                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${paramMap.media === 'cdrom' ? 'bg-amber-400/10 text-amber-400 ring-amber-400/20' : 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20'} ring-1 ring-inset`}>
+                              {paramMap.media === 'cdrom' ? 'CD-ROM' : 'Disk'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                          {paramMap.size && (
+                            <div className="text-sm">
+                              <span className="text-gray-500 dark:text-slate-400">Size: </span>
+                              <span className="font-medium text-gray-900 dark:text-slate-100">
+                                {paramMap.size.endsWith('G') ? paramMap.size : `${parseInt(paramMap.size) / 1024}G`}
+                              </span>
+                            </div>
+                          )}
+                          {paramMap.media && (
+                            <div className="text-sm">
+                              <span className="text-gray-500 dark:text-slate-400">Media: </span>
+                              <span className="font-medium text-gray-900 dark:text-slate-100">{paramMap.media}</span>
+                            </div>
+                          )}
+                          {paramMap.format && (
+                            <div className="text-sm">
+                              <span className="text-gray-500 dark:text-slate-400">Format: </span>
+                              <span className="font-medium text-gray-900 dark:text-slate-100">{paramMap.format}</span>
+                            </div>
+                          )}
+                          {paramMap.cache && (
+                            <div className="text-sm">
+                              <span className="text-gray-500 dark:text-slate-400">Cache: </span>
+                              <span className="font-medium text-gray-900 dark:text-slate-100">{paramMap.cache}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-xs font-mono text-gray-600 dark:text-slate-300 break-all">
-                        {String(value)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </section>
 
@@ -322,24 +363,46 @@ export default async function VMDetailPage(props: Props) {
                 Security Settings
               </h2>
               <dl className="space-y-4">
-                {config.protection && (
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
-                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Protection</dt>
-                    <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">{config.protection === 1 ? 'Enabled' : 'Disabled'}</dd>
-                  </div>
-                )}
-                {config.freeze && (
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
-                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Freeze CPU at Startup</dt>
-                    <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">{config.freeze === 1 ? 'Yes' : 'No'}</dd>
-                  </div>
-                )}
-                {config.hookscript && (
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
-                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Hook Script</dt>
-                    <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">{config.hookscript}</dd>
-                  </div>
-                )}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">SSH Key Authentication</dt>
+                  <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.sshkeys ? 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20' : 'bg-red-400/10 text-red-400 ring-red-400/20'}`}>
+                      {config.sshkeys ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Firewall</dt>
+                  <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.firewall ? 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20' : 'bg-red-400/10 text-red-400 ring-red-400/20'}`}>
+                      {config.firewall ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">TPM (Trusted Platform Module)</dt>
+                  <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.tpmstate0 ? 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20' : 'bg-red-400/10 text-red-400 ring-red-400/20'}`}>
+                      {config.tpmstate0 ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">SPICE Encryption</dt>
+                  <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.spice_enhancements?.includes('foldersharing') ? 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20' : 'bg-red-400/10 text-red-400 ring-red-400/20'}`}>
+                      {config.spice_enhancements?.includes('foldersharing') ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">VNC Encryption</dt>
+                  <dd className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.vncencryption ? 'bg-emerald-400/10 text-emerald-400 ring-emerald-400/20' : 'bg-red-400/10 text-red-400 ring-red-400/20'}`}>
+                      {config.vncencryption ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </dd>
+                </div>
               </dl>
             </section>
 
