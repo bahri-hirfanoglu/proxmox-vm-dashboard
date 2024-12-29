@@ -2,15 +2,10 @@ import axios from 'axios';
 import https from 'https';
 import { VirtualMachine } from '@/types/vm';
 
-interface ProxmoxApiResponse<T> {
-  data: T;
-  errors?: string[];
-  message?: string;
-  success?: boolean;
-}
-
 interface ProxmoxResponse<T> {
-  data: ProxmoxApiResponse<T>;
+  data: {
+    data: T;
+  };
   status: number;
 }
 
@@ -235,17 +230,15 @@ export async function getVirtualMachines(): Promise<VirtualMachine[]> {
           return [];
         }
 
-        const vms = response.data.data;
-        console.log(`Parsed VMs for node ${node.node}:`, vms);
-
-        if (!Array.isArray(vms)) {
-          console.error(`VMs data is not an array for node ${node.node}:`, vms);
+        const vmList = response.data.data;
+        if (!Array.isArray(vmList)) {
+          console.error(`VMs data is not an array for node ${node.node}:`, vmList);
           return [];
         }
 
-        return vms.map((vm: RawVMListResponse) => {
+        return vmList.map(vm => {
           console.log(`Transforming VM data for ${vm.vmid}:`, vm);
-          return transformVMData(vm as RawVMData, node.node);
+          return transformVMData(vm, node.node);
         });
       } catch (error) {
         console.error(`Error fetching VMs from node ${node.node}:`, error);
@@ -278,8 +271,21 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
     
     // First, verify that the VM exists
     const vmsResponse = await api.get<ProxmoxResponse<RawVMListResponse[]>>(`/nodes/${node}/qemu`);
-    const vms = vmsResponse?.data?.data?.data || [];
-    const vm = vms.find((vm: RawVMListResponse) => vm.vmid.toString() === vmId);
+    
+    console.log('VM List Response:', JSON.stringify(vmsResponse.data, null, 2));
+    
+    if (!vmsResponse?.data?.data) {
+      console.error('Invalid VM list response:', vmsResponse);
+      return null;
+    }
+
+    const vmList = vmsResponse.data.data;
+    if (!Array.isArray(vmList)) {
+      console.error('VM list is not an array:', vmList);
+      return null;
+    }
+
+    const vm = vmList.find(vm => vm.vmid.toString() === vmId);
     
     if (!vm) {
       console.warn(`VM with ID ${vmId} not found on node ${node}`);
@@ -289,49 +295,46 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
     // Get basic VM data
     const basicData = transformVMData(vm, node);
 
-    try {
-      // Get additional details with error handling for each request
-      const [statusRes, configRes, rrddataRes] = await Promise.all([
-        api.get<ProxmoxResponse<VMStatus>>(`/nodes/${node}/qemu/${vmId}/status/current`)
-          .catch(() => ({ data: { data: { data: { status: 'unknown', uptime: 0 } } } })),
-        api.get<ProxmoxResponse<VMConfig>>(`/nodes/${node}/qemu/${vmId}/config`)
-          .catch(() => ({ data: { data: { data: { name: basicData.name, cores: basicData.cpu.cores, memory: 0 } } } })),
-        api.get<ProxmoxResponse<Array<Record<string, number>>>>(`/nodes/${node}/qemu/${vmId}/rrddata`)
-          .catch(() => ({ data: { data: { data: [] } } }))
-      ]);
+    // Get additional details with error handling for each request
+    const [statusRes, configRes, rrddataRes] = await Promise.all([
+      api.get<ProxmoxResponse<VMStatus>>(`/nodes/${node}/qemu/${vmId}/status/current`)
+        .catch(error => {
+          console.error('Error fetching VM status:', error);
+          return null;
+        }),
+      api.get<ProxmoxResponse<VMConfig>>(`/nodes/${node}/qemu/${vmId}/config`)
+        .catch(error => {
+          console.error('Error fetching VM config:', error);
+          return null;
+        }),
+      api.get<ProxmoxResponse<Array<Record<string, number>>>>(`/nodes/${node}/qemu/${vmId}/rrddata`)
+        .catch(error => {
+          console.error('Error fetching VM rrddata:', error);
+          return null;
+        })
+    ]);
 
-      return {
-        status: {
-          ...statusRes?.data?.data?.data || { status: 'unknown', uptime: 0 },
-          status: basicData.status
-        },
-        config: {
-          ...configRes?.data?.data?.data || { name: basicData.name, cores: basicData.cpu.cores, memory: 0 },
-          name: basicData.name,
-          cores: basicData.cpu.cores,
-          memory: Math.floor(basicData.memory.total / (1024 * 1024))
-        },
-        rrddata: rrddataRes?.data?.data?.data || [],
-        basicData
-      };
-    } catch (error) {
-      console.error(`Error fetching additional VM details for ${vmId}:`, error);
-      return {
-        status: {
-          status: basicData.status,
-          uptime: 0
-        },
-        config: {
-          name: basicData.name,
-          cores: basicData.cpu.cores,
-          memory: Math.floor(basicData.memory.total / (1024 * 1024))
-        },
-        rrddata: [],
-        basicData
-      };
-    }
+    // Create default values for missing data
+    const defaultStatus: VMStatus = {
+      status: basicData.status,
+      uptime: 0,
+      qmpstatus: 'unknown'
+    };
+
+    const defaultConfig: VMConfig = {
+      name: basicData.name,
+      cores: basicData.cpu.cores,
+      memory: Math.floor(basicData.memory.total / (1024 * 1024))
+    };
+
+    return {
+      status: statusRes?.data?.data || defaultStatus,
+      config: configRes?.data?.data || defaultConfig,
+      rrddata: rrddataRes?.data?.data || [],
+      basicData
+    };
   } catch (error) {
-    console.error(`Error fetching VM details for ${vmId}:`, error);
+    console.error('Error fetching VM details:', error);
     return null;
   }
 } 
