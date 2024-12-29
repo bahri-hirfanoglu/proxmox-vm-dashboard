@@ -2,6 +2,25 @@ import axios from 'axios';
 import https from 'https';
 import { VirtualMachine } from '@/types/vm';
 
+interface ProxmoxResponse<T> {
+  data: T;
+  errors?: string[];
+  message?: string;
+}
+
+interface VMConfig {
+  name: string;
+  cores: number;
+  memory: number;
+  [key: string]: string | number | boolean | undefined;
+}
+
+interface VMStatus {
+  status: string;
+  uptime: number;
+  qmpstatus?: string;
+}
+
 // Proxmox ticket (cookie) based authentication
 async function getAuthTicket() {
   try {
@@ -108,26 +127,35 @@ export async function getVirtualMachines() {
   }
 }
 
-export async function getVMDetails(vmid: string, nodeName: string) {
+export async function getVMDetails(vmId: string, node: string): Promise<ProxmoxResponse<{
+  status: VMStatus;
+  config: VMConfig;
+  rrddata: Array<Record<string, number>>;
+  basicData: {
+    cpu: { usage: number; cores: number };
+    memory: { used: number; total: number };
+    disk: { used: number; total: number };
+  };
+}>> {
   try {
     const api = await createAuthenticatedApi();
     
     // First, verify that the VM exists
-    const vmsResponse = await api.get(`/nodes/${nodeName}/qemu`);
-    const vm = vmsResponse.data.data.find((vm: any) => vm.vmid.toString() === vmid);
+    const vmsResponse = await api.get(`/nodes/${node}/qemu`);
+    const vm = vmsResponse.data.data.find((vm: any) => vm.vmid.toString() === vmId);
     
     if (!vm) {
-      throw new Error(`VM with ID ${vmid} not found on node ${nodeName}`);
+      throw new Error(`VM with ID ${vmId} not found on node ${node}`);
     }
 
     // Get basic VM data
-    const basicData = transformVMData(vm, nodeName);
+    const basicData = transformVMData(vm, node);
 
     // Get additional details
     const [status, config, rrddata] = await Promise.all([
-      api.get(`/nodes/${nodeName}/qemu/${vmid}/status/current`).catch(() => ({ data: { data: { status: 'unknown' } } })),
-      api.get(`/nodes/${nodeName}/qemu/${vmid}/config`).catch(() => ({ data: { data: {} } })),
-      api.get(`/nodes/${nodeName}/qemu/${vmid}/rrddata`).catch(() => ({ data: { data: [] } }))
+      api.get(`/nodes/${node}/qemu/${vmId}/status/current`).catch(() => ({ data: { data: { status: 'unknown' } } })),
+      api.get(`/nodes/${node}/qemu/${vmId}/config`).catch(() => ({ data: { data: {} } })),
+      api.get(`/nodes/${node}/qemu/${vmId}/rrddata`).catch(() => ({ data: { data: [] } }))
     ]);
 
     return {
@@ -145,7 +173,7 @@ export async function getVMDetails(vmid: string, nodeName: string) {
       basicData // Include the basic data for reference
     };
   } catch (error) {
-    console.error(`Error fetching VM details for ${vmid}:`, error);
+    console.error(`Error fetching VM details for ${vmId}:`, error);
     throw error;
   }
 } 
