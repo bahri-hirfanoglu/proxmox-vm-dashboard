@@ -6,10 +6,12 @@ interface ProxmoxApiResponse<T> {
   data: T;
   errors?: string[];
   message?: string;
+  success?: boolean;
 }
 
 interface ProxmoxResponse<T> {
   data: ProxmoxApiResponse<T>;
+  status: number;
 }
 
 interface VMConfig {
@@ -157,8 +159,22 @@ export async function getNodes(): Promise<ProxmoxNode[]> {
     console.log('Fetching nodes...');
     const api = await createAuthenticatedApi();
     const response = await api.get<ProxmoxResponse<ProxmoxNode[]>>('/nodes');
-    const nodes = response?.data?.data?.data || [];
-    console.log('Fetched nodes:', nodes);
+    
+    console.log('Full nodes response:', JSON.stringify(response.data, null, 2));
+    
+    if (!response.data?.data) {
+      console.error('Invalid response format - missing data:', response.data);
+      return [];
+    }
+
+    const nodes = response.data.data;
+    console.log('Parsed nodes:', nodes);
+
+    if (!Array.isArray(nodes)) {
+      console.error('Nodes data is not an array:', nodes);
+      return [];
+    }
+
     return nodes;
   } catch (error) {
     console.error('Error fetching nodes:', error);
@@ -199,6 +215,8 @@ export async function getVirtualMachines(): Promise<VirtualMachine[]> {
     const api = await createAuthenticatedApi();
     const nodes = await getNodes();
     
+    console.log('Retrieved nodes for VM fetch:', nodes);
+    
     if (!nodes || nodes.length === 0) {
       console.warn('No nodes found or unable to fetch nodes');
       return [];
@@ -207,9 +225,28 @@ export async function getVirtualMachines(): Promise<VirtualMachine[]> {
     // Get VMs from all nodes
     const vmPromises = nodes.map(async (node: ProxmoxNode) => {
       try {
+        console.log(`Fetching VMs for node: ${node.node}`);
         const response = await api.get<ProxmoxResponse<RawVMListResponse[]>>(`/nodes/${node.node}/qemu`);
-        const vms = response?.data?.data?.data || [];
-        return vms.map((vm: RawVMListResponse) => transformVMData(vm as RawVMData, node.node));
+        
+        console.log(`Full VM response for node ${node.node}:`, JSON.stringify(response.data, null, 2));
+        
+        if (!response.data?.data) {
+          console.error(`Invalid VM response format for node ${node.node}:`, response.data);
+          return [];
+        }
+
+        const vms = response.data.data;
+        console.log(`Parsed VMs for node ${node.node}:`, vms);
+
+        if (!Array.isArray(vms)) {
+          console.error(`VMs data is not an array for node ${node.node}:`, vms);
+          return [];
+        }
+
+        return vms.map((vm: RawVMListResponse) => {
+          console.log(`Transforming VM data for ${vm.vmid}:`, vm);
+          return transformVMData(vm as RawVMData, node.node);
+        });
       } catch (error) {
         console.error(`Error fetching VMs from node ${node.node}:`, error);
         return [];
@@ -217,7 +254,9 @@ export async function getVirtualMachines(): Promise<VirtualMachine[]> {
     });
 
     const vmsFromAllNodes = await Promise.all(vmPromises);
-    return vmsFromAllNodes.flat();
+    const flattenedVMs = vmsFromAllNodes.flat();
+    console.log('Final transformed VMs:', flattenedVMs);
+    return flattenedVMs;
   } catch (error) {
     console.error('Error fetching virtual machines:', error);
     return [];
