@@ -1,46 +1,36 @@
-# Proxmox VM Dashboard 🖥️
+# Proxmox VM Dashboard
 
-[English](#english) | [Türkçe](#türkçe)
+Proxmox VE sunucularınızdaki sanal makineleri yönetmek ve izlemek için modern bir web arayüzü.
 
----
+🌐 **Demo:** [https://proxmox-vm-dashboard.netlify.app/](https://proxmox-vm-dashboard.netlify.app/)
 
-# Türkçe
+## Özellikler
 
-## 📋 Proje Hakkında
+- 🖥️ Tüm sanal makinelerin tek bir panelden yönetimi
+- 📊 Gerçek zamanlı CPU, RAM ve disk kullanım istatistikleri
+- 🔒 Gelişmiş güvenlik ayarları yönetimi
+  - SSH Anahtar Kimlik Doğrulaması
+  - Güvenlik Duvarı Durumu
+  - TPM (Trusted Platform Module) Durumu
+  - SPICE Şifreleme
+  - VNC Şifreleme
+- 💾 Detaylı depolama cihazları yönetimi
+- 🌙 Koyu mod desteği
+- 🔄 Otomatik yenileme (30 saniye)
+- 📱 Mobil uyumlu tasarım
 
-Proxmox VM Dashboard, Proxmox sunucunuzdaki sanal makineleri izlemek ve yönetmek için modern bir web arayüzüdür. Next.js, TypeScript ve Tailwind CSS kullanılarak geliştirilmiştir.
+## Teknolojiler
 
-## 📸 Ekran Görüntüleri
+- ⚡ Next.js 14 (App Router)
+- 🎨 Tailwind CSS
+- 🔷 TypeScript
+- 🔧 ESLint & Prettier
+- 🐳 Docker desteği
+- 🚀 Netlify deployment
 
-### Ana Sayfa - Kart Görünümü (Açık Tema)
-![Ana Sayfa Kart Görünümü](/public/screenshots/home-grid-light.png)
-*VM'lerin kart görünümü ve hızlı durum bilgileri*
+## Başlangıç
 
-### Ana Sayfa - Liste Görünümü (Koyu Tema)
-![Ana Sayfa Liste Görünümü](/public/screenshots/home-list-dark.png)
-*VM'lerin detaylı liste görünümü*
-
-### VM Detay Sayfası
-![VM Detay Sayfası](/public/screenshots/vm-details.png)
-*Sanal makine detaylı bilgileri ve performans metrikleri*
-
-### Responsive Tasarım
-![Mobil Görünüm](/public/screenshots/mobile-view.png)
-*Mobil cihazlarda uyumlu görünüm*
-
-### 🌟 Özellikler
-
-- 🔄 Gerçek zamanlı VM durumu izleme
-- 📊 Detaylı kaynak kullanımı (CPU, RAM, Disk)
-- 🎨 Kart ve liste görünümü seçenekleri
-- 🌓 Koyu/Açık tema desteği
-- 📱 Responsive tasarım
-- 🔄 30 saniyelik otomatik yenileme
-- 🔒 Güvenli API bağlantısı
-
-### 🚀 Başlangıç
-
-1. Projeyi klonlayın:
+1. Repoyu klonlayın:
 ```bash
 git clone https://github.com/yourusername/proxmox-vm-dashboard.git
 cd proxmox-vm-dashboard
@@ -53,8 +43,8 @@ npm install
 
 3. `.env.local` dosyasını oluşturun:
 ```env
-PROXMOX_API_URL=https://your-proxmox-host:8006/api2/json
-PROXMOX_USERNAME=your-username
+PROXMOX_API_URL=https://your-proxmox-server:8006/api2/json
+PROXMOX_USERNAME=your-username@pam
 PROXMOX_PASSWORD=your-password
 ```
 
@@ -63,65 +53,55 @@ PROXMOX_PASSWORD=your-password
 npm run dev
 ```
 
-### 🛠️ Teknolojiler
+## Docker ile Çalıştırma
 
-- **Frontend Framework**: Next.js 13 (App Router)
-- **Programlama Dili**: TypeScript
-- **Stil**: Tailwind CSS
-- **State Yönetimi**: Zustand
-- **HTTP Client**: Axios
-- **Icons**: Heroicons
+```bash
+# Build
+docker build -t proxmox-vm-dashboard .
 
-### 📦 Proje Yapısı
-
-```
-src/
-├── app/                # Next.js app router sayfaları
-├── components/         # Yeniden kullanılabilir bileşenler
-├── lib/               # Yardımcı fonksiyonlar ve API istemcisi
-├── store/             # Zustand state yönetimi
-└── types/             # TypeScript tipleri
+# Çalıştırma
+docker run -p 3000:3000 \
+  -e PROXMOX_API_URL=https://your-proxmox-server:8006/api2/json \
+  -e PROXMOX_USERNAME=your-username@pam \
+  -e PROXMOX_PASSWORD=your-password \
+  proxmox-vm-dashboard
 ```
 
 ---
 
-# English
+# Proxmox VM Dashboard
 
-## 📋 About
+A modern web interface for managing and monitoring virtual machines on your Proxmox VE servers.
 
-Proxmox VM Dashboard is a modern web interface for monitoring and managing virtual machines on your Proxmox server. Built with Next.js, TypeScript, and Tailwind CSS.
+🌐 **Demo:** [https://proxmox-vm-dashboard.netlify.app/](https://proxmox-vm-dashboard.netlify.app/)
 
-## 📸 Screenshots
+## Features
 
-### Home Page - Card View (Light Theme)
-![Home Page Card View](/public/screenshots/home-grid-light.png)
-*VM card view with quick status information*
+- 🖥️ Manage all virtual machines from a single dashboard
+- 📊 Real-time CPU, RAM, and disk usage statistics
+- 🔒 Advanced security settings management
+  - SSH Key Authentication
+  - Firewall Status
+  - TPM (Trusted Platform Module) Status
+  - SPICE Encryption
+  - VNC Encryption
+- 💾 Detailed storage devices management
+- 🌙 Dark mode support
+- 🔄 Auto-refresh (30 seconds)
+- 📱 Mobile-responsive design
 
-### Home Page - List View (Dark Theme)
-![Home Page List View](/public/screenshots/home-list-dark.png)
-*Detailed list view of VMs*
+## Technologies
 
-### VM Detail Page
-![VM Detail Page](/public/screenshots/vm-details.png)
-*Virtual machine detailed information and performance metrics*
+- ⚡ Next.js 14 (App Router)
+- 🎨 Tailwind CSS
+- 🔷 TypeScript
+- 🔧 ESLint & Prettier
+- 🐳 Docker support
+- 🚀 Netlify deployment
 
-### Responsive Design
-![Mobile View](/public/screenshots/mobile-view.png)
-*Responsive layout on mobile devices*
+## Getting Started
 
-### 🌟 Features
-
-- 🔄 Real-time VM status monitoring
-- 📊 Detailed resource usage (CPU, RAM, Disk)
-- 🎨 Card and list view options
-- 🌓 Dark/Light theme support
-- 📱 Responsive design
-- 🔄 30-second auto-refresh
-- 🔒 Secure API connection
-
-### 🚀 Getting Started
-
-1. Clone the project:
+1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/proxmox-vm-dashboard.git
 cd proxmox-vm-dashboard
@@ -134,8 +114,8 @@ npm install
 
 3. Create `.env.local` file:
 ```env
-PROXMOX_API_URL=https://your-proxmox-host:8006/api2/json
-PROXMOX_USERNAME=your-username
+PROXMOX_API_URL=https://your-proxmox-server:8006/api2/json
+PROXMOX_USERNAME=your-username@pam
 PROXMOX_PASSWORD=your-password
 ```
 
@@ -144,28 +124,16 @@ PROXMOX_PASSWORD=your-password
 npm run dev
 ```
 
-### 🛠️ Technologies
+## Running with Docker
 
-- **Frontend Framework**: Next.js 13 (App Router)
-- **Programming Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: Zustand
-- **HTTP Client**: Axios
-- **Icons**: Heroicons
+```bash
+# Build
+docker build -t proxmox-vm-dashboard .
 
-### 📦 Project Structure
-
+# Run
+docker run -p 3000:3000 \
+  -e PROXMOX_API_URL=https://your-proxmox-server:8006/api2/json \
+  -e PROXMOX_USERNAME=your-username@pam \
+  -e PROXMOX_PASSWORD=your-password \
+  proxmox-vm-dashboard
 ```
-src/
-├── app/                # Next.js app router pages
-├── components/         # Reusable components
-├── lib/               # Utility functions and API client
-├── store/             # Zustand state management
-└── types/             # TypeScript types
-```
-
----
-
-## 📝 License
-
-MIT License
