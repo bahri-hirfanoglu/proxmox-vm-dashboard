@@ -64,6 +64,28 @@ interface RawVMListResponse {
   [key: string]: string | number | boolean | undefined;
 }
 
+interface VMSnapshot {
+  name: string;
+  snaptime: number;
+  description?: string;
+  vmstate?: boolean;
+}
+
+interface VMBackup {
+  volid: string;
+  ctime: number;
+  format: string;
+  size: number;
+}
+
+interface VMDetails {
+  status: VMStatus;
+  config: VMConfig;
+  rrddata: Record<string, number>[];
+  snapshots: VMSnapshot[];
+  backups: VMBackup[];
+}
+
 // Proxmox ticket (cookie) based authentication
 async function getAuthTicket() {
   const username = (process.env.PROXMOX_USERNAME || 'root').replace('@pam', '');
@@ -147,6 +169,12 @@ async function createAuthenticatedApi() {
   );
 
   return api;
+}
+
+// Get authentication ticket
+async function getTicket(): Promise<string> {
+  const { ticket } = await getAuthTicket();
+  return ticket;
 }
 
 export async function getNodes(): Promise<ProxmoxNode[]> {
@@ -256,16 +284,7 @@ export async function getVirtualMachines(): Promise<VirtualMachine[]> {
   }
 }
 
-export async function getVMDetails(vmId: string, node: string): Promise<{
-  status: VMStatus;
-  config: VMConfig;
-  rrddata: Array<Record<string, number>>;
-  basicData: {
-    cpu: { usage: number; cores: number };
-    memory: { used: number; total: number };
-    disk: { used: number; total: number };
-  };
-} | null> {
+export async function getVMDetails(vmId: string, node: string): Promise<VMDetails | null> {
   try {
     const api = await createAuthenticatedApi();
     
@@ -295,8 +314,8 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
     // Get basic VM data
     const basicData = transformVMData(vm, node);
 
-    // Get additional details with error handling for each request
-    const [statusRes, configRes, rrddataRes] = await Promise.all([
+    // Get all VM details in parallel
+    const [statusRes, configRes, rrddataRes, snapshots, backups] = await Promise.all([
       api.get<ProxmoxResponse<VMStatus>>(`/nodes/${node}/qemu/${vmId}/status/current`)
         .catch(error => {
           console.error('Error fetching VM status:', error);
@@ -314,7 +333,9 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
       }).catch(error => {
           console.error('Error fetching VM rrddata:', error);
           return null;
-        })
+        }),
+      getVMSnapshots(vmId, node),
+      getVMBackups(vmId, node)
     ]);
 
     // Create default values for missing data
@@ -334,10 +355,40 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
       status: statusRes?.data?.data || defaultStatus,
       config: configRes?.data?.data || defaultConfig,
       rrddata: rrddataRes?.data?.data || [],
-      basicData
+      snapshots: snapshots || [],
+      backups: backups || []
     };
   } catch (error) {
     console.error('Error fetching VM details:', error);
     return null;
+  }
+}
+
+// Get VM snapshots
+export async function getVMSnapshots(vmId: string, node: string): Promise<VMSnapshot[]> {
+  try {
+    const api = await createAuthenticatedApi();
+    const response = await api.get<ProxmoxResponse<VMSnapshot[]>>(`/nodes/${node}/qemu/${vmId}/snapshot`);
+    return response.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching VM snapshots:', error);
+    return [];
+  }
+}
+
+// Get VM backups
+export async function getVMBackups(vmId: string, node: string): Promise<VMBackup[]> {
+  try {
+    const api = await createAuthenticatedApi();
+    const response = await api.get<ProxmoxResponse<VMBackup[]>>(`/nodes/${node}/storage/local/content`, {
+      params: {
+        content: 'backup',
+        vmid: vmId
+      }
+    });
+    return response.data?.data || [];
+  } catch (error) {
+    console.error('Error fetching VM backups:', error);
+    return [];
   }
 } 

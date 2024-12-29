@@ -123,7 +123,47 @@ export default async function VMDetailPage({ params, searchParams }: PageProps) 
       );
     }
 
-    const { status, config, rrddata, basicData } = vmDetails;
+    const { status, config, rrddata, snapshots, backups } = vmDetails;
+
+    // Calculate CPU usage from rrddata
+    const cpuUsage = rrddata && rrddata.length > 0 ? (rrddata[0].cpu || 0) * 100 : 0;
+    const memoryUsed = rrddata && rrddata.length > 0 ? rrddata[0].mem || 0 : 0;
+    const memoryTotal = rrddata && rrddata.length > 0 ? rrddata[0].maxmem || 0 : 0;
+
+    const quickStats = [
+      {
+        label: 'CPU Usage',
+        value: `${cpuUsage.toFixed(1)}%`,
+        subtext: `${config.cores || 1} Cores`,
+        icon: CpuChipIcon,
+        color: 'text-blue-500 dark:text-blue-400',
+        bgColor: 'bg-blue-50 dark:bg-blue-500/10'
+      },
+      {
+        label: 'Memory',
+        value: formatBytes(memoryUsed),
+        subtext: `of ${formatBytes(memoryTotal)}`,
+        icon: CircleStackIcon,
+        color: 'text-purple-500 dark:text-purple-400',
+        bgColor: 'bg-purple-50 dark:bg-purple-500/10'
+      },
+      {
+        label: 'Status',
+        value: status.status,
+        subtext: status.qmpstatus || 'Unknown',
+        icon: ServerIcon,
+        color: 'text-emerald-500 dark:text-emerald-400',
+        bgColor: 'bg-emerald-50 dark:bg-emerald-500/10'
+      },
+      {
+        label: 'Uptime',
+        value: formatUptime(status.uptime || 0),
+        subtext: 'Since last boot',
+        icon: ClockIcon,
+        color: 'text-amber-500 dark:text-amber-400',
+        bgColor: 'bg-amber-50 dark:bg-amber-500/10'
+      }
+    ];
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -163,46 +203,13 @@ export default async function VMDetailPage({ params, searchParams }: PageProps) 
 
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            {[
-              {
-                label: 'CPU Usage',
-                value: `${(basicData.cpu.usage * 100).toFixed(1)}%`,
-                subtext: `${basicData.cpu.cores} Cores`,
-                icon: CpuChipIcon,
-                color: 'text-blue-500 dark:text-blue-400',
-                bg: 'bg-blue-50 dark:bg-blue-500/10'
-              },
-              {
-                label: 'Memory Usage',
-                value: formatBytes(basicData.memory.used),
-                subtext: `of ${formatBytes(basicData.memory.total)}`,
-                icon: CircleStackIcon,
-                color: 'text-purple-500 dark:text-purple-400',
-                bg: 'bg-purple-50 dark:bg-purple-500/10'
-              },
-              {
-                label: 'Disk Usage',
-                value: `${((basicData.disk.used / basicData.disk.total) * 100).toFixed(1)}%`,
-                subtext: `${formatBytes(basicData.disk.used)} / ${formatBytes(basicData.disk.total)}`,
-                icon: CircleStackIcon,
-                color: 'text-emerald-500 dark:text-emerald-400',
-                bg: 'bg-emerald-50 dark:bg-emerald-500/10'
-              },
-              {
-                label: 'Uptime',
-                value: formatUptime(status.uptime),
-                subtext: status.qmpstatus || status.status,
-                icon: ClockIcon,
-                color: 'text-amber-500 dark:text-amber-400',
-                bg: 'bg-amber-50 dark:bg-amber-500/10'
-              }
-            ].map((stat, index) => (
+            {quickStats.map((stat, index) => (
               <div key={index} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-500 dark:text-slate-400">
                     {stat.label}
                   </span>
-                  <div className={`p-2 rounded-lg ${stat.bg}`}>
+                  <div className={`p-2 rounded-lg ${stat.bgColor}`}>
                     <stat.icon className={`w-5 h-5 ${stat.color}`} />
                   </div>
                 </div>
@@ -438,20 +445,315 @@ export default async function VMDetailPage({ params, searchParams }: PageProps) 
               </dl>
             </section>
 
-            {/* Performance Metrics */}
+            {/* Performance History */}
             {rrddata && rrddata.length > 0 && (
               <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 lg:col-span-3">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center">
                   <ArrowPathIcon className="w-5 h-5 mr-2 text-gray-400 dark:text-slate-500" />
                   Performance History
                 </h2>
-                <div className="bg-gray-50 dark:bg-slate-700/30 rounded-lg p-4 overflow-x-auto">
-                  <pre className="text-sm text-gray-700 dark:text-slate-300">
-                    {JSON.stringify(rrddata[0], null, 2)}
-                  </pre>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* CPU Usage Card */}
+                  <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
+                          <CpuChipIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">CPU Usage</h3>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Last hour average</p>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+                        {((rrddata[0].cpu || 0) * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="h-[120px] w-full bg-white dark:bg-slate-800 rounded-lg p-4">
+                      {/* CPU Chart placeholder - you can integrate a real chart library here */}
+                      <div className="h-full w-full flex items-end space-x-1">
+                        {rrddata.slice(0, 20).map((data, index) => (
+                          <div
+                            key={index}
+                            className="flex-1 bg-blue-400 dark:bg-blue-500 rounded-t"
+                            style={{
+                              height: `${Math.max((data.cpu || 0) * 100, 5)}%`,
+                              transition: 'height 0.3s ease-in-out'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Memory Usage Card */}
+                  <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-purple-50 dark:bg-purple-500/10 rounded-lg">
+                          <CircleStackIcon className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Memory Usage</h3>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Last hour average</p>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">
+                        {formatBytes(rrddata[0].maxmem || 0)}
+                      </div>
+                    </div>
+                    <div className="h-[120px] w-full bg-white dark:bg-slate-800 rounded-lg p-4">
+                      {/* Memory Chart placeholder */}
+                      <div className="h-full w-full flex items-end space-x-1">
+                        {rrddata.slice(0, 20).map((data, index) => (
+                          <div
+                            key={index}
+                            className="flex-1 bg-purple-400 dark:bg-purple-500 rounded-t"
+                            style={{
+                              height: `${Math.max((data.mem || 0) / (data.maxmem || 1) * 100, 5)}%`,
+                              transition: 'height 0.3s ease-in-out'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Network Traffic Card */}
+                  <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg">
+                          <SignalIcon className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Network Traffic</h3>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Incoming/Outgoing</p>
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                        <div>↓ {formatBytes(rrddata[0].netin || 0)}/s</div>
+                        <div>↑ {formatBytes(rrddata[0].netout || 0)}/s</div>
+                      </div>
+                    </div>
+                    <div className="h-[120px] w-full bg-white dark:bg-slate-800 rounded-lg p-4">
+                      <div className="h-full w-full flex items-end space-x-1">
+                        {rrddata.slice(0, 20).map((data, index) => (
+                          <div key={index} className="flex-1 flex flex-col justify-end space-y-1">
+                            <div
+                              className="w-full bg-emerald-400 dark:bg-emerald-500 rounded-t"
+                              style={{
+                                height: `${Math.max((data.netin || 0) / (Math.max(...rrddata.map(d => d.netin || 0)) || 1) * 100, 5)}%`,
+                                transition: 'height 0.3s ease-in-out'
+                              }}
+                            />
+                            <div
+                              className="w-full bg-emerald-300 dark:bg-emerald-400 rounded-t"
+                              style={{
+                                height: `${Math.max((data.netout || 0) / (Math.max(...rrddata.map(d => d.netout || 0)) || 1) * 100, 5)}%`,
+                                transition: 'height 0.3s ease-in-out'
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Disk I/O Card */}
+                  <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg">
+                          <CircleStackIcon className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Disk I/O</h3>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Read/Write</p>
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                        <div>↓ {formatBytes(rrddata[0].diskread || 0)}/s</div>
+                        <div>↑ {formatBytes(rrddata[0].diskwrite || 0)}/s</div>
+                      </div>
+                    </div>
+                    <div className="h-[120px] w-full bg-white dark:bg-slate-800 rounded-lg p-4">
+                      <div className="h-full w-full flex items-end space-x-1">
+                        {rrddata.slice(0, 20).map((data, index) => (
+                          <div key={index} className="flex-1 flex flex-col justify-end space-y-1">
+                            <div
+                              className="w-full bg-amber-400 dark:bg-amber-500 rounded-t"
+                              style={{
+                                height: `${Math.max((data.diskread || 0) / (Math.max(...rrddata.map(d => d.diskread || 0)) || 1) * 100, 5)}%`,
+                                transition: 'height 0.3s ease-in-out'
+                              }}
+                            />
+                            <div
+                              className="w-full bg-amber-300 dark:bg-amber-400 rounded-t"
+                              style={{
+                                height: `${Math.max((data.diskwrite || 0) / (Math.max(...rrddata.map(d => d.diskwrite || 0)) || 1) * 100, 5)}%`,
+                                transition: 'height 0.3s ease-in-out'
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </section>
             )}
+
+            {/* Backup & Snapshot Information */}
+            <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 lg:col-span-2">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center">
+                <CloudIcon className="w-5 h-5 mr-2 text-gray-400 dark:text-slate-500" />
+                Backup & Recovery
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Last Backup Status */}
+                <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Last Backup</h3>
+                    {backups && backups.length > 0 ? (
+                    <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-emerald-400/10 text-emerald-400 ring-1 ring-inset ring-emerald-400/20">
+                        Available
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-yellow-400/10 text-yellow-400 ring-1 ring-inset ring-yellow-400/20">
+                        No Backups
+                    </span>
+                    )}
+                  </div>
+                  {backups && backups.length > 0 ? (
+                    <>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                        Performed on {new Date(backups[0].ctime * 1000).toLocaleDateString()}
+                  </p>
+                  <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-slate-400">
+                        <span>Size: {formatBytes(backups[0].size || 0)}</span>
+                    <span>•</span>
+                        <span>Format: {backups[0].format || 'Unknown'}</span>
+                  </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      No backup history available
+                    </p>
+                  )}
+                </div>
+
+                {/* Snapshot Information */}
+                <div className="bg-gray-50 dark:bg-slate-700/30 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Active Snapshots</h3>
+                    <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-blue-400/10 text-blue-400 ring-1 ring-inset ring-blue-400/20">
+                      {snapshots?.length || 0} Total
+                    </span>
+                  </div>
+                  {snapshots && snapshots.length > 0 ? (
+                    <>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                        Latest: {snapshots[0].name}
+                        <br />
+                        Description: {snapshots[0].description || 'No description'}
+                  </p>
+                  <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-slate-400">
+                        <span>Created: {new Date(snapshots[0].snaptime * 1000).toLocaleDateString()}</span>
+                  </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-slate-400">
+                      No active snapshots
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Console & Access Information */}
+            <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center">
+                <CommandLineIcon className="w-5 h-5 mr-2 text-gray-400 dark:text-slate-500" />
+                Remote Access
+              </h2>
+              <div className="space-y-4">
+                {/* Console Access */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Console Type</dt>
+                    <dd className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Current remote console configuration</dd>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    {config.vga || 'Default VGA'}
+                  </div>
+                </div>
+
+                {/* Display Settings */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Display Resolution</dt>
+                    <dd className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Maximum resolution supported</dd>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    {config.vga === 'qxl' ? '1920x1080' : '1024x768'}
+                  </div>
+                </div>
+
+                {/* Keyboard Layout */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Keyboard Layout</dt>
+                    <dd className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Default input language</dd>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    {config.keyboard || 'en-us'}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* VM Template Information */}
+            <section className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-6 flex items-center">
+                <ServerIcon className="w-5 h-5 mr-2 text-gray-400 dark:text-slate-500" />
+                Template Information
+              </h2>
+              <div className="space-y-4">
+                {/* Template Status */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Template Status</dt>
+                    <dd className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Whether this VM is a template</dd>
+                  </div>
+                  <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${config.template ? 'bg-purple-400/10 text-purple-400 ring-purple-400/20' : 'bg-gray-400/10 text-gray-400 ring-gray-400/20'}`}>
+                    {config.template ? 'Template' : 'Regular VM'}
+                  </span>
+                </div>
+
+                {/* Base Image */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Base Image</dt>
+                    <dd className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Original template or ISO</dd>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    {config.ostype || 'Custom'}
+                  </div>
+                </div>
+
+                {/* Creation Date */}
+                <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700/50">
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-slate-400">Created</dt>
+                    <dd className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">VM creation date</dd>
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
         </main>
       </div>
