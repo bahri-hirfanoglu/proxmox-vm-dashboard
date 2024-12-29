@@ -6,7 +6,6 @@ import {
   CircleStackIcon,
   ServerIcon,
   ClockIcon,
-  ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 
 function formatBytes(bytes: number, decimals = 2) {
