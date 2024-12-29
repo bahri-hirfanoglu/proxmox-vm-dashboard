@@ -1,21 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --success: #22c55e;
+  --warning: #eab308;
+  --danger: #ef4444;
+  --background: #f9fafb;
+  --card: #ffffff;
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root[class~="dark"] {
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --background: #0f172a;
+  --card: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-slate-800/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100/10 dark:border-slate-700/50 backdrop-blur-sm;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-500/10 dark:text-yellow-400;
+  }
+
+  .badge-danger {
+    @apply bg-red-100 text-red-800 dark:bg-red-500/10 dark:text-red-400;
+  }
+
+  .stat-label {
+    @apply text-sm font-medium text-gray-500 dark:text-slate-400;
+  }
+
+  .stat-value {
+    @apply text-sm font-semibold text-gray-900 dark:text-slate-200;
+  }
 }

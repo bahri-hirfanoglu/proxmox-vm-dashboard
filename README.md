@@ -1,36 +1,171 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Proxmox VM Dashboard 🖥️
 
-## Getting Started
+[English](#english) | [Türkçe](#türkçe)
 
-First, run the development server:
+---
 
+# Türkçe
+
+## 📋 Proje Hakkında
+
+Proxmox VM Dashboard, Proxmox sunucunuzdaki sanal makineleri izlemek ve yönetmek için modern bir web arayüzüdür. Next.js, TypeScript ve Tailwind CSS kullanılarak geliştirilmiştir.
+
+## 📸 Ekran Görüntüleri
+
+### Ana Sayfa - Kart Görünümü (Açık Tema)
+![Ana Sayfa Kart Görünümü](/screenshots/home-grid-light.png)
+*VM'lerin kart görünümü ve hızlı durum bilgileri*
+
+### Ana Sayfa - Liste Görünümü (Koyu Tema)
+![Ana Sayfa Liste Görünümü](/screenshots/home-list-dark.png)
+*VM'lerin detaylı liste görünümü*
+
+### VM Detay Sayfası
+![VM Detay Sayfası](/screenshots/vm-details.png)
+*Sanal makine detaylı bilgileri ve performans metrikleri*
+
+### Responsive Tasarım
+![Mobil Görünüm](/screenshots/mobile-view.png)
+*Mobil cihazlarda uyumlu görünüm*
+
+### 🌟 Özellikler
+
+- 🔄 Gerçek zamanlı VM durumu izleme
+- 📊 Detaylı kaynak kullanımı (CPU, RAM, Disk)
+- 🎨 Kart ve liste görünümü seçenekleri
+- 🌓 Koyu/Açık tema desteği
+- 📱 Responsive tasarım
+- 🔄 30 saniyelik otomatik yenileme
+- 🔒 Güvenli API bağlantısı
+
+### 🚀 Başlangıç
+
+1. Projeyi klonlayın:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/yourusername/proxmox-vm-dashboard.git
+cd proxmox-vm-dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Bağımlılıkları yükleyin:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. `.env.local` dosyasını oluşturun:
+```env
+PROXMOX_API_URL=https://your-proxmox-host:8006/api2/json
+PROXMOX_USERNAME=your-username
+PROXMOX_PASSWORD=your-password
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Geliştirme sunucusunu başlatın:
+```bash
+npm run dev
+```
 
-## Learn More
+### 🛠️ Teknolojiler
 
-To learn more about Next.js, take a look at the following resources:
+- **Frontend Framework**: Next.js 13 (App Router)
+- **Programlama Dili**: TypeScript
+- **Stil**: Tailwind CSS
+- **State Yönetimi**: Zustand
+- **HTTP Client**: Axios
+- **Icons**: Heroicons
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 📦 Proje Yapısı
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/                # Next.js app router sayfaları
+├── components/         # Yeniden kullanılabilir bileşenler
+├── lib/               # Yardımcı fonksiyonlar ve API istemcisi
+├── store/             # Zustand state yönetimi
+└── types/             # TypeScript tipleri
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# English
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📋 About
+
+Proxmox VM Dashboard is a modern web interface for monitoring and managing virtual machines on your Proxmox server. Built with Next.js, TypeScript, and Tailwind CSS.
+
+## 📸 Screenshots
+
+### Home Page - Card View (Light Theme)
+![Home Page Card View](/screenshots/home-grid-light.png)
+*VM card view with quick status information*
+
+### Home Page - List View (Dark Theme)
+![Home Page List View](/screenshots/home-list-dark.png)
+*Detailed list view of VMs*
+
+### VM Detail Page
+![VM Detail Page](/screenshots/vm-details.png)
+*Virtual machine detailed information and performance metrics*
+
+### Responsive Design
+![Mobile View](/screenshots/mobile-view.png)
+*Responsive layout on mobile devices*
+
+### 🌟 Features
+
+- 🔄 Real-time VM status monitoring
+- 📊 Detailed resource usage (CPU, RAM, Disk)
+- 🎨 Card and list view options
+- 🌓 Dark/Light theme support
+- 📱 Responsive design
+- 🔄 30-second auto-refresh
+- 🔒 Secure API connection
+
+### 🚀 Getting Started
+
+1. Clone the project:
+```bash
+git clone https://github.com/yourusername/proxmox-vm-dashboard.git
+cd proxmox-vm-dashboard
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create `.env.local` file:
+```env
+PROXMOX_API_URL=https://your-proxmox-host:8006/api2/json
+PROXMOX_USERNAME=your-username
+PROXMOX_PASSWORD=your-password
+```
+
+4. Start the development server:
+```bash
+npm run dev
+```
+
+### 🛠️ Technologies
+
+- **Frontend Framework**: Next.js 13 (App Router)
+- **Programming Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **HTTP Client**: Axios
+- **Icons**: Heroicons
+
+### 📦 Project Structure
+
+```
+src/
+├── app/                # Next.js app router pages
+├── components/         # Reusable components
+├── lib/               # Utility functions and API client
+├── store/             # Zustand state management
+└── types/             # TypeScript types
+```
+
+---
+
+## 📝 License
+
+MIT License
