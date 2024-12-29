@@ -307,8 +307,11 @@ export async function getVMDetails(vmId: string, node: string): Promise<{
           console.error('Error fetching VM config:', error);
           return null;
         }),
-      api.get<ProxmoxResponse<Array<Record<string, number>>>>(`/nodes/${node}/qemu/${vmId}/rrddata`)
-        .catch(error => {
+      api.get<ProxmoxResponse<Array<Record<string, number>>>>(`/nodes/${node}/qemu/${vmId}/rrddata`, {
+        params: {
+          timeframe: 'hour'
+        }
+      }).catch(error => {
           console.error('Error fetching VM rrddata:', error);
           return null;
         })
